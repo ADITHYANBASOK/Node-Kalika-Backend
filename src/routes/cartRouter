@@ -1,0 +1,139 @@
+const express = require('express')
+const obj= require("mongoose")
+
+const cartModel = require('../Models/cartModel')
+const object_id= obj.Types.ObjectId
+
+
+
+const cartRouter = express.Router()
+
+cartRouter.post('/cart',async function(req,res){
+    try{
+
+        const makecart = {
+            product_id:req.body.product_id,
+            user_id:req.body.userid,
+            quantity:1,
+            status: 0
+          
+
+        }
+        const oldcart = await cartModel.findOne({  product_id:req.body.product_id, user_id:req.body.userid,status:0 })
+        console.log("haio",oldcart);
+        if (oldcart) {
+            return res.status(400).json({
+                success: false,
+                error: true,
+                message: "item is already existed",
+            })
+        }
+
+        const datas = await cartModel(makecart).save() // insert data
+        console.log(datas);
+        if (datas) {
+            
+            return res.status(200).json({
+                success: true,
+                error: false,
+                message: " add to cart succesfully completed",
+                data: datas
+            })
+        }
+
+    } catch {
+        return res.status(400).json({
+            success: false,
+            error: true,
+            message: "Something went wrong",
+        })
+    }
+
+})
+// const user = await cartModel.find({user_id:userid})
+
+
+cartRouter.get('/viewcart/:userid', async function (req, res) {
+    try {
+        const userid = req.params.userid
+
+        const usercart = await cartModel.aggregate([
+            {
+              '$lookup': {
+                'from': 'addproduct_tbs', 
+                'localField': '_id', 
+                'foreignField': 'product_id', 
+                'as': 'product'
+              }
+            }
+            ,
+            // {
+            //     "$unwind":'$product'
+            // },
+            // {
+            //     '$match':{
+            //         "user_id": new object_id(userid)
+            //     }
+            // },
+            // {
+            //     '$match':{
+            //         "status": '0'
+            //     }
+            // },
+            // {
+            //     $group:{
+            //         '_id':'$_id',
+            //         'quantity':{'$first':'$quantity'},
+            //         'product_category':{'$first':'$product.product_category'},
+            //         'photo':{'$first':'$product.photo'},
+            //         'price':{'$first':'$product.price'},
+
+
+
+
+
+
+            //     }
+            // }
+          ])
+        if (usercart[0]!=undefined) {
+            return res.status(200).json({
+                success: true,
+                error: false,
+                data: usercart,
+            })
+        }
+        else{
+            return res.status(400).json({
+                success: false,
+                error: true,
+                message: "no data found",
+            })
+        }
+
+    }catch {
+        return res.status(400).json({
+            success: false,
+            error: true,
+            message: "Something went wrong",
+        })
+    }
+
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+module.exports = cartRouter
